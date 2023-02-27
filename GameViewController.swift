@@ -15,7 +15,15 @@ class GameViewController: UIViewController {
     
     @IBOutlet weak var statusLabel: UILabel!
     
-    lazy var game = Game(countItems: buttons.count)
+    @IBOutlet weak var timerLabel: UILabel!
+    
+    @IBOutlet weak var newGameButton: UIButton!
+    
+    lazy var game = Game(countItems: buttons.count,time: 30) { [weak self] status, seconds in
+        guard let self = self else {return}
+        self.timerLabel.text = seconds.secondsToString()
+        self.updateInfoGame(with: status)
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -31,6 +39,12 @@ class GameViewController: UIViewController {
         updateUI()
     }
     
+    @IBAction func newGame(_ sender: UIButton) {
+        game.newGame()
+        sender.isHidden = true
+        setupScreen()
+    }
+    
     // Изменение цыфры на кнопке
     private func setupScreen(){
         for index in game.items.indices{
@@ -44,12 +58,38 @@ class GameViewController: UIViewController {
     private func updateUI(){
         for index in game.items.indices{
             buttons[index].isHidden = game.items[index].isFound
+            if game.items[index].isError{
+                UIView.animate(withDuration: 0.3) { [weak self] in
+                    self?.buttons[index].backgroundColor = .red
+                } completion: { [weak self] (_) in
+                    self?.buttons[index].backgroundColor = .black
+                    self?.game.items[index].isError = false
+                }
+            }
         }
+        
         nextDigit.text = game.nextItem?.title
         
-        if game.status == .win{
-            statusLabel.text = "Вы выиграли"
+        updateInfoGame(with: game.status)
+    }
+    
+    private func updateInfoGame (with status:StatusGame){
+        switch status {
+            
+        case .start:
+            statusLabel.text = "Понеслась"
+            statusLabel.textColor = .black
+            newGameButton.isHidden = true
+            
+        case .win:
+            statusLabel.text = "Красава"
             statusLabel.textColor = .green
+            newGameButton.isHidden = false
+            
+        case .lose:
+            statusLabel.text = "Потрачено"
+            statusLabel.textColor = .red
+            newGameButton.isHidden = false
         }
     }
     
